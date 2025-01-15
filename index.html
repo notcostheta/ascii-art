@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ASCII Art Generator</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .container { display: flex; gap: 20px; }
+        .controls { flex: 1; }
+        .preview { flex: 2; }
+        .control-group { margin-bottom: 15px; }
+        #output { 
+            font-family: monospace; 
+            white-space: pre; 
+            background: #000;
+            color: #fff;
+            padding: 10px;
+            overflow: auto;
+            font-size: 8px;
+            line-height: 8px;
+        }
+        canvas { border: 1px solid #ccc; }
+        label { display: inline-block; width: 120px; }
+    </style>
+</head>
+<body>
+    <h1>ASCII Art Generator</h1>
+    <div class="container">
+        <div class="controls">
+            <div class="control-group">
+                <input type="file" id="imageInput" accept="image/*">
+            </div>
+            
+            <div class="control-group">
+                <label>ASCII Scale:</label>
+                <select id="scaleSelect">
+                    <option value="minimalist">Minimalist</option>
+                    <option value="normal" selected>Normal</option>
+                    <option value="normal2">Normal 2</option>
+                    <option value="alphabetic">Alphabetic</option>
+                    <option value="alphanumeric">Alphanumeric</option>
+                    <option value="numerical">Numerical</option>
+                    <option value="extended">Extended</option>
+                    <option value="math">Math</option>
+                    <option value="arrow">Arrow</option>
+                    <option value="grayscale">Grayscale</option>
+                    <option value="max">Max</option>
+                    <option value="codepage437">CodePage 437</option>
+                    <option value="blockelement">Block Element</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Width:</label>
+                <input type="range" id="widthRange" min="20" max="400" value="100">
+                <span id="widthValue">100</span>
+            </div>
+
+            <div class="control-group">
+                <label>Brightness:</label>
+                <input type="range" id="brightnessRange" min="0" max="200" value="100">
+                <span id="brightnessValue">100</span>
+            </div>
+
+            <div class="control-group">
+                <label>Contrast:</label>
+                <input type="range" id="contrastRange" min="0" max="200" value="100">
+                <span id="contrastValue">100</span>
+            </div>
+
+            <div class="control-group">
+                <label>Saturation:</label>
+                <input type="range" id="saturationRange" min="0" max="200" value="100">
+                <span id="saturationValue">100</span>
+            </div>
+
+            <div class="control-group">
+                <label>Space Density:</label>
+                <input type="range" id="spaceDensityRange" min="0" max="5" value="1" step="1">
+                <span id="spaceDensityValue">1</span>
+            </div>
+
+            <div class="control-group">
+                <label>Edge Detection:</label>
+                <input type="checkbox" id="edgeDetectionCheck">
+                <label>Edge Intensity:</label>
+                <input type="range" id="edgeIntensityRange" min="0.1" max="5" value="1" step="0.1">
+                <span id="edgeIntensityValue">1</span>
+            </div>
+
+            <div class="control-group">
+                <label>Sharpness:</label>
+                <input type="checkbox" id="sharpenCheck">
+                <label>Amount:</label>
+                <input type="range" id="sharpnessRange" min="1" max="20" value="9" step="1">
+                <span id="sharpnessValue">9</span>
+            </div>
+
+            <div class="control-group">
+                <label>Dithering:</label>
+                <select id="ditheringSelect">
+                    <option value="none">None</option>
+                    <option value="FloydSteinberg">Floyd-Steinberg</option>
+                    <option value="JJN">JJN</option>
+                    <option value="Stucki">Stucki</option>
+                    <option value="Atkinson">Atkinson</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <button id="downloadBtn">Download ASCII Art</button>
+                <button id="copyBtn">Copy to Clipboard</button>
+            </div>
+        </div>
+
+        <div class="preview">
+            <canvas id="image-preview"></canvas>
+            <div id="output"></div>
+        </div>
+    </div>
+    <script src="ImageToASCII.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
