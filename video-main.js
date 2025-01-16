@@ -141,6 +141,14 @@ document.getElementById('loopCheck').addEventListener('change', (e) => {
     }
 });
 
+document.getElementById('invertRange').addEventListener('input', (e) => {
+    document.getElementById('invertValue').textContent = e.target.value;
+    ascii.setInvert(parseInt(e.target.value));
+    if (!videoAscii.isPlaying) {
+        videoAscii.renderFrame();
+    }
+});
+
 // Export handlers
 document.getElementById('exportVideoBtn').addEventListener('click', async () => {
     const progressDiv = document.getElementById('exportProgress');

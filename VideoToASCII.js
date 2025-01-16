@@ -10,50 +10,96 @@ class VideoToASCII {
 
     loadVideo(file) {
         return new Promise((resolve, reject) => {
-            const url = URL.createObjectURL(file);
-            this.video.src = url;
-            this.video.onloadedmetadata = () => {
-                this.canvas.width = this.video.videoWidth;
-                this.canvas.height = this.video.videoHeight;
-                resolve();
-            };
-            this.video.onerror = reject;
+            if (file.type === 'image/gif') {
+                this.isGif = true;
+
+                // Create an <img> for libgif
+                const gifImg = document.createElement('img');
+                gifImg.onload = () => {
+                    // Setup SuperGif handler
+                    this.superGif = new SuperGif({
+                        gif: gifImg,
+                        auto_play: false
+                    });
+                    this.superGif.load(() => {
+                        // Once loaded, set canvas size
+                        const gifCanvas = this.superGif.get_canvas();
+                        this.canvas.width = gifCanvas.width;
+                        this.canvas.height = gifCanvas.height;
+                        resolve();
+                    });
+                };
+                gifImg.onerror = reject;
+
+                const reader = new FileReader();
+                reader.onload = e => { gifImg.src = e.target.result; };
+                reader.readAsDataURL(file);
+
+            } else {
+                this.isGif = false;
+                const url = URL.createObjectURL(file);
+                this.video.src = url;
+                this.video.onloadedmetadata = () => {
+                    this.canvas.width = this.video.videoWidth;
+                    this.canvas.height = this.video.videoHeight;
+                    resolve();
+                };
+                this.video.onerror = reject;
+            }
         });
     }
 
     start() {
         this.isPlaying = true;
-        this.video.play();
+        if (this.isGif && this.superGif) {
+            this.superGif.play();
+        } else {
+            this.video.play();
+        }
         this.render();
     }
 
     stop() {
         this.isPlaying = false;
-        this.video.pause();
+        if (this.isGif && this.superGif) {
+            this.superGif.pause();
+        } else {
+            this.video.pause();
+        }
     }
 
     render() {
         if (!this.isPlaying) return;
 
-        // Clear canvas before each frame
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        // Draw current video frame
-        this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
-        
-        // Convert frame to ASCII with current settings
-        this.ascii.convert(this.canvas);
+        if (this.isGif && this.superGif) {
+            // Draw animated GIF from superGif
+            const gifCanvas = this.superGif.get_canvas();
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.drawImage(gifCanvas, 0, 0);
+            this.ascii.convert(this.canvas);
 
-        // Schedule next frame with proper timing
-        setTimeout(() => {
             requestAnimationFrame(() => this.render());
-        }, 1000 / this.frameRate);
+        } else {
+            // Regular video rendering
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+            this.ascii.convert(this.canvas);
+
+            requestAnimationFrame(() => this.render());
+        }
     }
 
     renderFrame() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
-        this.ascii.convert(this.canvas);
+        if (this.isGif && this.superGif) {
+            const gifCanvas = this.superGif.get_canvas();
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.drawImage(gifCanvas, 0, 0);
+            this.ascii.convert(this.canvas);
+        } else {
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+            this.ascii.convert(this.canvas);
+        }
     }
 
     setFrameRate(fps) {
@@ -61,23 +107,55 @@ class VideoToASCII {
     }
 
     getCurrentTime() {
+        if (this.isGif) {
+            return 0; // GIFs don't track time the same way
+        }
         return this.video.currentTime;
     }
 
     getDuration() {
+        if (this.isGif) {
+            return 0; // GIFs don't have a fixed duration
+        }
         return this.video.duration;
     }
 
     seek(time) {
-        this.video.currentTime = time;
+        if (!this.isGif) {
+            this.video.currentTime = time;
+        }
     }
 
     setLoop(enabled) {
+        if (this.isGif) {
+            // GIFs always loop
+            return;
+        }
         this.video.loop = enabled;
     }
 
     // New export methods
     async extractFrames(progressCallback) {
+        // Handle GIF separately
+        if (this.isGif && this.superGif) {
+            const frames = [];
+            const totalFrames = this.superGif.get_length();
+
+            for (let i = 0; i < totalFrames; i++) {
+                this.superGif.move_to(i);
+                this.renderFrame();
+                frames.push({
+                    frameIndex: i,
+                    ascii: this.ascii.getAsciiText()
+                });
+                if (progressCallback) {
+                    const progress = (i / totalFrames) * 100;
+                    progressCallback(progress);
+                }
+            }
+            return frames;
+        }
+
         const frames = [];
         this.video.currentTime = 0;
         
@@ -111,55 +189,100 @@ class VideoToASCII {
     }
 
     async exportToVideo(progressCallback) {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const stream = canvas.captureStream(this.frameRate);
-        const mediaRecorder = new MediaRecorder(stream, {
-            mimeType: 'video/webm;codecs=vp9',
-            videoBitsPerSecond: 5000000
-        });
-
-        const chunks = [];
-        mediaRecorder.ondataavailable = e => chunks.push(e.data);
-
-        // Set up promise for completion
-        const recordingDone = new Promise(resolve => {
-            mediaRecorder.onstop = () => {
-                const blob = new Blob(chunks, { type: 'video/webm' });
-                resolve(blob);
-            };
-        });
-
-        // Start recording
-        mediaRecorder.start();
-        this.video.currentTime = 0;
-
-        while (this.video.currentTime < this.video.duration) {
-            await new Promise(resolve => {
-                this.video.onseeked = resolve;
-                if (this.video.currentTime >= this.video.duration) {
-                    resolve();
-                }
+        if (this.isGif && this.superGif) {
+            // Handle GIF by iterating over frames
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const stream = canvas.captureStream(this.frameRate);
+            const mediaRecorder = new MediaRecorder(stream, {
+                mimeType: 'video/webm;codecs=vp9',
+                videoBitsPerSecond: 5000000
             });
 
-            // Render frame
-            this.renderFrame();
-            
-            // Draw ASCII output to canvas
-            this.drawAsciiToCanvas(canvas, ctx);
+            const chunks = [];
+            mediaRecorder.ondataavailable = e => chunks.push(e.data);
+            const recordingDone = new Promise(resolve => {
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: 'video/webm' });
+                    resolve(blob);
+                };
+            });
 
-            // Update progress
-            if (progressCallback) {
-                const progress = (this.video.currentTime / this.video.duration) * 100;
-                progressCallback(progress);
+            // Start recording
+            mediaRecorder.start();
+            const totalFrames = this.superGif.get_length();
+            for (let i = 0; i < totalFrames; i++) {
+                this.superGif.move_to(i);
+                
+                // Render frame to internal canvas
+                this.renderFrame();
+                
+                // Draw ASCII output to the capture canvas
+                this.drawAsciiToCanvas(canvas, ctx);
+
+                if (progressCallback) {
+                    const progress = (i / totalFrames) * 100;
+                    progressCallback(progress);
+                }
+
+                // Just wait a bit so each frame is recorded (e.g. ~34ms for 30fps)
+                await new Promise(r => setTimeout(r, 1000 / this.frameRate));
             }
 
-            // Move to next frame
-            this.video.currentTime += 1 / this.frameRate;
-        }
+            mediaRecorder.stop();
+            return recordingDone;
 
-        mediaRecorder.stop();
-        return recordingDone;
+        } else {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const stream = canvas.captureStream(this.frameRate);
+            const mediaRecorder = new MediaRecorder(stream, {
+                mimeType: 'video/webm;codecs=vp9',
+                videoBitsPerSecond: 5000000
+            });
+
+            const chunks = [];
+            mediaRecorder.ondataavailable = e => chunks.push(e.data);
+
+            // Set up promise for completion
+            const recordingDone = new Promise(resolve => {
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: 'video/webm' });
+                    resolve(blob);
+                };
+            });
+
+            // Start recording
+            mediaRecorder.start();
+            this.video.currentTime = 0;
+
+            while (this.video.currentTime < this.video.duration) {
+                await new Promise(resolve => {
+                    this.video.onseeked = resolve;
+                    if (this.video.currentTime >= this.video.duration) {
+                        resolve();
+                    }
+                });
+
+                // Render frame
+                this.renderFrame();
+                
+                // Draw ASCII output to canvas
+                this.drawAsciiToCanvas(canvas, ctx);
+
+                // Update progress
+                if (progressCallback) {
+                    const progress = (this.video.currentTime / this.video.duration) * 100;
+                    progressCallback(progress);
+                }
+
+                // Move to next frame
+                this.video.currentTime += 1 / this.frameRate;
+            }
+
+            mediaRecorder.stop();
+            return recordingDone;
+        }
     }
 
     drawAsciiToCanvas(canvas, ctx) {
@@ -210,5 +333,27 @@ class VideoToASCII {
 
         // Reset transformation
         ctx.setTransform(1, 0, 0, 1, 0, 0);
+    }
+
+    async exportGifFrames() {
+        if (!this.isGif || !this.superGif) return [];
+
+        const totalFrames = this.superGif.get_length();
+        const frames = [];
+
+        for (let i = 0; i < totalFrames; i++) {
+            this.superGif.move_to(i);
+            // Render current frame
+            const gifCanvas = this.superGif.get_canvas();
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.drawImage(gifCanvas, 0, 0);
+            this.ascii.convert(this.canvas);
+
+            frames.push({
+                frameIndex: i,
+                ascii: this.ascii.getAsciiText()
+            });
+        }
+        return frames;
     }
 }
