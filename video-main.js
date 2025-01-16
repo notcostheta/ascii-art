@@ -120,8 +120,9 @@ document.getElementById('sharpenCheck').addEventListener('change', (e) => {
 });
 
 document.getElementById('sharpnessRange').addEventListener('input', (e) => {
-    document.getElementById('sharpnessValue').textContent = e.target.value;
-    ascii.setSharpness(parseInt(e.target.value));
+    const value = parseFloat(e.target.value).toFixed(1);
+    document.getElementById('sharpnessValue').textContent = value;
+    ascii.setSharpness(parseFloat(value));
     if (!videoAscii.isPlaying) {
         videoAscii.renderFrame();
     }
