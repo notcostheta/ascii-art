@@ -150,6 +150,44 @@ document.getElementById('invertRange').addEventListener('input', (e) => {
     }
 });
 
+// Font size handler
+document.getElementById('fontSizeRange').addEventListener('input', (e) => {
+    const size = parseInt(e.target.value);
+    const lineHeight = Math.ceil(size * 1.2); // Keep consistent with VideoToASCII
+    
+    document.getElementById('fontSizeValue').textContent = size;
+    
+    // Update preview with proper aspect ratio
+    const output = document.getElementById('output');
+    output.style.fontSize = `${size}px`;
+    output.style.lineHeight = `${lineHeight}px`;
+    output.style.letterSpacing = `${size * 0.1}px`; // Add slight letter spacing for better aspect ratio
+    
+    videoAscii.setFontSize(size);
+    if (!videoAscii.isPlaying) {
+        videoAscii.renderFrame();
+    }
+});
+
+// Color picker handlers
+document.getElementById('bgColorPicker').addEventListener('input', (e) => {
+    const color = e.target.value;
+    videoAscii.setBackgroundColor(color);
+    document.getElementById('output').style.backgroundColor = color;
+    if (!videoAscii.isPlaying) {
+        videoAscii.renderFrame();
+    }
+});
+
+document.getElementById('fgColorPicker').addEventListener('input', (e) => {
+    const color = e.target.value;
+    videoAscii.setForegroundColor(color);
+    document.getElementById('output').style.color = color;
+    if (!videoAscii.isPlaying) {
+        videoAscii.renderFrame();
+    }
+});
+
 // Export handlers
 document.getElementById('exportVideoBtn').addEventListener('click', async () => {
     const progressDiv = document.getElementById('exportProgress');

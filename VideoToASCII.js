@@ -6,6 +6,9 @@ class VideoToASCII {
         this.video = document.createElement('video');
         this.canvas = document.createElement('canvas');
         this.ctx = this.canvas.getContext('2d');
+        this.backgroundColor = '#000000';
+        this.foregroundColor = '#ffffff';
+        this.fontSize = 8;
     }
 
     loadVideo(file) {
@@ -285,24 +288,39 @@ class VideoToASCII {
         }
     }
 
+    setBackgroundColor(color) {
+        this.backgroundColor = color;
+    }
+
+    setForegroundColor(color) {
+        this.foregroundColor = color;
+    }
+
+    setFontSize(size) {
+        this.fontSize = size;
+    }
+
     drawAsciiToCanvas(canvas, ctx) {
         const ascii = this.ascii.getAsciiText();
         const lines = ascii.split('\n');
-        const lineHeight = 10;
-        const fontSize = 8;
-
-        // Calculate dimensions maintaining aspect ratio
-        const originalAspectRatio = this.video.videoWidth / this.video.videoHeight;
-        const desiredWidth = lines[0].length * fontSize;
+        const lineHeight = Math.ceil(this.fontSize * 1.2);
+        const letterSpacing = this.fontSize * 0.1; // Add consistent letter spacing
+        
+        // Calculate dimensions with letter spacing
+        const charWidth = this.fontSize * 0.6 + letterSpacing; // Monospace chars are typically ~0.6x as wide as they are tall
+        const desiredWidth = lines[0].length * charWidth;
         const desiredHeight = lines.length * lineHeight;
         
-        // Adjust canvas size to maintain aspect ratio
+        // Calculate aspect ratio based on original video
+        const originalAspectRatio = this.isGif ? 
+            (this.superGif ? this.superGif.get_canvas().width / this.superGif.get_canvas().height : 1) :
+            (this.video.videoWidth / this.video.videoHeight);
+
+        // Adjust canvas size
         if (desiredWidth / desiredHeight > originalAspectRatio) {
-            // Width is too large, adjust based on height
             canvas.height = desiredHeight;
             canvas.width = desiredHeight * originalAspectRatio;
         } else {
-            // Height is too large, adjust based on width
             canvas.width = desiredWidth;
             canvas.height = desiredWidth / originalAspectRatio;
         }
@@ -314,7 +332,7 @@ class VideoToASCII {
         );
 
         // Clear and set background
-        ctx.fillStyle = 'black';
+        ctx.fillStyle = this.backgroundColor;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
         // Center the ASCII art
@@ -325,8 +343,11 @@ class VideoToASCII {
         ctx.scale(scale, scale);
 
         // Draw ASCII text
-        ctx.fillStyle = 'white';
-        ctx.font = `${fontSize}px monospace`;
+        ctx.fillStyle = this.foregroundColor;
+        ctx.font = `${this.fontSize}px monospace`;
+        ctx.textAlign = 'left';
+        ctx.letterSpacing = `${letterSpacing}px`;
+        
         lines.forEach((line, i) => {
             ctx.fillText(line, 0, (i + 1) * lineHeight);
         });
