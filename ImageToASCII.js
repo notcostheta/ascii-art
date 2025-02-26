@@ -34,7 +34,10 @@ class ImageToASCII {
                 codepage437: "█▓▒░",
                 blockelement: "█"
             },
-            this.currentScale = e
+            this.currentScale = e,
+            this.backgroundColor = '#000000',
+            this.foregroundColor = '#ffffff',
+            this.fontSize = 8
     }
     // Main conversion method
     convert(t) {
@@ -417,6 +420,17 @@ class ImageToASCII {
     }
     setTransparentFrame(t) {
         this.transparentFrame = t
+    }
+    setBackgroundColor(color) {
+        this.backgroundColor = color;
+    }
+
+    setForegroundColor(color) {
+        this.foregroundColor = color;
+    }
+
+    setFontSize(size) {
+        this.fontSize = size;
     }
 }
 

@@ -87,6 +87,45 @@ document.getElementById('sharpnessRange').addEventListener('input', (e) => {
     updateAsciiArt();
 });
 
+// Invert handler
+document.getElementById('invertRange').addEventListener('input', (e) => {
+    document.getElementById('invertValue').textContent = e.target.value;
+    ascii.setInvert(parseInt(e.target.value));
+    updateAsciiArt();
+});
+
+// Font size handler
+document.getElementById('fontSizeRange').addEventListener('input', (e) => {
+    const size = parseInt(e.target.value);
+    const lineHeight = Math.ceil(size * 1.2);
+    
+    document.getElementById('fontSizeValue').textContent = size;
+    
+    // Update preview with proper aspect ratio
+    const output = document.getElementById('output');
+    output.style.fontSize = `${size}px`;
+    output.style.lineHeight = `${lineHeight}px`;
+    output.style.letterSpacing = `${size * 0.1}px`;
+    
+    ascii.setFontSize(size);
+    updateAsciiArt();
+});
+
+// Color picker handlers
+document.getElementById('bgColorPicker').addEventListener('input', (e) => {
+    const color = e.target.value;
+    ascii.setBackgroundColor(color);
+    document.getElementById('output').style.backgroundColor = color;
+    updateAsciiArt();
+});
+
+document.getElementById('fgColorPicker').addEventListener('input', (e) => {
+    const color = e.target.value;
+    ascii.setForegroundColor(color);
+    document.getElementById('output').style.color = color;
+    updateAsciiArt();
+});
+
 // Download button handler
 document.getElementById('downloadBtn').addEventListener('click', () => {
     const text = ascii.getAsciiText();

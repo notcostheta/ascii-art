@@ -107,6 +107,28 @@
             </div>
 
             <div class="control-group">
+                <label>Invert:</label>
+                <input type="range" id="invertRange" min="0" max="100" value="0">
+                <span id="invertValue">0</span>
+            </div>
+
+            <div class="control-group">
+                <label>Background Color:</label>
+                <input type="color" id="bgColorPicker" value="#000000">
+            </div>
+
+            <div class="control-group">
+                <label>Foreground Color:</label>
+                <input type="color" id="fgColorPicker" value="#ffffff">
+            </div>
+
+            <div class="control-group">
+                <label>Font Size:</label>
+                <input type="range" id="fontSizeRange" min="4" max="24" value="8" step="1">
+                <span id="fontSizeValue">8</span>
+            </div>
+
+            <div class="control-group">
                 <button id="downloadBtn">Download ASCII Art</button>
                 <button id="copyBtn">Copy to Clipboard</button>
             </div>
